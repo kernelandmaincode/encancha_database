@@ -6,9 +6,10 @@
 -- BUILD LIMPIO: empieza con DROP TABLE. Nunca ejecutar sobre una base
 -- con datos reales; para eso están migrations/NNN_*.sql.
 -- Migraciones incluidas:
---   001 — schema inicial (41 tablas)
+--   001 — schema inicial (41 tablas; con 004 son 42)
 --   002 — seed de catálogos (sports, event_types, packages)
 --   003 — seed de config global
+--   004 — acceso de jugadores: invitations, roster 'requested', interruptor de registro libre
 -- =============================================================
 
 SET NAMES utf8mb4;
@@ -17,6 +18,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------------------
 -- DROP (FOREIGN_KEY_CHECKS=0, el orden no importa)
 -- -------------------------------------------------------------
+DROP TABLE IF EXISTS `invitations`;
 DROP TABLE IF EXISTS `config`;
 DROP TABLE IF EXISTS `shared_cards`;
 DROP TABLE IF EXISTS `notification_preferences`;
@@ -449,7 +451,7 @@ CREATE TABLE IF NOT EXISTS `tournament_rosters` (
     `player_id`          BIGINT UNSIGNED NOT NULL,
     `jersey_number`      SMALLINT UNSIGNED NULL,
     `position`           VARCHAR(40) NULL,
-    `status`             ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    `status`             ENUM('requested','pending','approved','rejected') NOT NULL DEFAULT 'pending',
     `reviewed_by_user_id` BIGINT UNSIGNED NULL,
     `valid_from`         DATE NOT NULL,
     `valid_to`           DATE NULL,
@@ -494,6 +496,38 @@ CREATE TABLE IF NOT EXISTS `roster_transfers` (
     CONSTRAINT `fk_roster_transfers_to_roster` FOREIGN KEY (`to_tournament_roster_id`) REFERENCES `tournament_rosters` (`id`),
     CONSTRAINT `fk_roster_transfers_requested_by` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users` (`id`),
     CONSTRAINT `fk_roster_transfers_approved_by` FOREIGN KEY (`approved_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- invitations: las dos puertas de entrada de un jugador.
+--   player_claim → enlace que el delegado manda a un jugador que él dio de
+--                  alta; al registrarse, la cuenta se liga a ese perfil.
+--                  Se guarda solo el SHA-256 del token (token_hash).
+--   team_join    → código corto del equipo en un torneo; quien lo captura
+--                  pide entrar al plantel. Se guarda en claro (code) porque
+--                  el delegado necesita volver a verlo y compartirlo.
+CREATE TABLE IF NOT EXISTS `invitations` (
+    `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `type`               ENUM('player_claim','team_join') NOT NULL,
+    `code`               VARCHAR(12) NULL,
+    `token_hash`         CHAR(64)    NULL,
+    `player_id`          BIGINT UNSIGNED NULL,
+    `tournament_team_id` BIGINT UNSIGNED NULL,
+    `created_by_user_id` BIGINT UNSIGNED NOT NULL,
+    `max_uses`           INT UNSIGNED NULL,
+    `uses`               INT UNSIGNED NOT NULL DEFAULT 0,
+    `expires_at`         DATETIME NULL,
+    `status`             ENUM('active','used','revoked') NOT NULL DEFAULT 'active',
+    `created_at`         DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_invitations_code` (`code`),
+    UNIQUE KEY `uq_invitations_token` (`token_hash`),
+    KEY `idx_invitations_player` (`player_id`),
+    KEY `idx_invitations_tt` (`tournament_team_id`, `status`),
+    KEY `idx_invitations_created_by` (`created_by_user_id`),
+    CONSTRAINT `fk_invitations_player` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_invitations_tt` FOREIGN KEY (`tournament_team_id`) REFERENCES `tournament_teams` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_invitations_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================================
@@ -1101,6 +1135,7 @@ INSERT INTO `config` (`scope`, `scope_id`, `config_key`, `value`, `value_type`, 
 ('global', 0, 'ADS_ENABLED_DEFAULT',     '0',        'bool',   'Valor inicial de accounts.ads_enabled en cuentas nuevas', 0),
 ('global', 0, 'PAGINATION_DEFAULT',      '20',       'int',    'Tamaño de página por defecto en listados', 0),
 ('global', 0, 'PHOTO_MAX_SIZE_MB',       '10',       'int',    'Tamaño máximo de imagen en MB', 0),
+('global', 0, 'PLAYER_SELF_REGISTRATION_ENABLED', '1', 'bool', 'Permitir que un jugador se registre por su cuenta sin invitación de un equipo', 0),
 
 -- Operación de la liga (el admin de liga las ajusta)
 ('global', 0, 'IDENTITY_VERIFICATION_MODE',     'flexible', 'string', 'strict = solo juegan registrados y verificados; flexible = se admiten invitados', 1),
