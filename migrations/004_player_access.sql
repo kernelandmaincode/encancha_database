@@ -1,25 +1,28 @@
 -- =============================================================
--- Migración 004 — Acceso de jugadores a la app (D18)
+-- Migración 004 — Acceso de jugadores y árbitros a la app (D18, D19)
 -- Idempotente: CREATE TABLE IF NOT EXISTS, MODIFY COLUMN, ON DUPLICATE KEY
 -- Fuente: ENCANCHA_PHASE2_DESIGN.md D18
 -- =============================================================
 
 SET NAMES utf8mb4;
 
--- invitations: las dos puertas de entrada de un jugador.
+-- invitations: puertas de entrada de jugadores y árbitros.
 --   player_claim → enlace que el delegado manda a un jugador que él dio de
 --                  alta; al registrarse, la cuenta se liga a ese perfil.
 --                  Se guarda solo el SHA-256 del token (token_hash).
 --   team_join    → código corto del equipo en un torneo; quien lo captura
 --                  pide entrar al plantel. Se guarda en claro (code) porque
 --                  el delegado necesita volver a verlo y compartirlo.
+--   referee_join → enlace con el que el admin de liga suma a un árbitro a
+--                  su liga (league_id); crea o activa su fila en league_referees.
 CREATE TABLE IF NOT EXISTS `invitations` (
     `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `type`               ENUM('player_claim','team_join') NOT NULL,
+    `type`               ENUM('player_claim','team_join','referee_join') NOT NULL,
     `code`               VARCHAR(12) NULL,
     `token_hash`         CHAR(64)    NULL,
     `player_id`          BIGINT UNSIGNED NULL,
     `tournament_team_id` BIGINT UNSIGNED NULL,
+    `league_id`          BIGINT UNSIGNED NULL,
     `created_by_user_id` BIGINT UNSIGNED NOT NULL,
     `max_uses`           INT UNSIGNED NULL,
     `uses`               INT UNSIGNED NOT NULL DEFAULT 0,
@@ -32,9 +35,11 @@ CREATE TABLE IF NOT EXISTS `invitations` (
     UNIQUE KEY `uq_invitations_token` (`token_hash`),
     KEY `idx_invitations_player` (`player_id`),
     KEY `idx_invitations_tt` (`tournament_team_id`, `status`),
+    KEY `idx_invitations_league` (`league_id`),
     KEY `idx_invitations_created_by` (`created_by_user_id`),
     CONSTRAINT `fk_invitations_player` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_invitations_tt` FOREIGN KEY (`tournament_team_id`) REFERENCES `tournament_teams` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_invitations_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_invitations_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

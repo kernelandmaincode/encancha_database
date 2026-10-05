@@ -1,7 +1,7 @@
 -- =============================================================
--- Migración 001 — Schema inicial de EnCancha (41 tablas)
+-- Migración 001 — Schema inicial de EnCancha (42 tablas)
 -- Idempotente: CREATE TABLE IF NOT EXISTS
--- Fuente: ENCANCHA_PHASE2_DESIGN.md §1 (decisiones D1-D17)
+-- Fuente: ENCANCHA_PHASE2_DESIGN.md §1 (decisiones D1-D19)
 -- =============================================================
 
 SET NAMES utf8mb4;
@@ -219,20 +219,37 @@ CREATE TABLE IF NOT EXISTS `league_admins` (
     CONSTRAINT `fk_league_admins_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- referees: league_id NULL = árbitro independiente, asignable por cualquier liga.
+-- referees: el árbitro siempre tiene cuenta (user_id obligatorio) y es una
+-- sola identidad para toda la plataforma; a qué ligas pita lo dice league_referees.
 CREATE TABLE IF NOT EXISTS `referees` (
     `id`                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id`             BIGINT UNSIGNED NOT NULL,
-    `league_id`           BIGINT UNSIGNED NULL,
     `verification_status` ENUM('pending','verified','rejected') NOT NULL DEFAULT 'pending',
     `status`              ENUM('active','inactive') NOT NULL DEFAULT 'active',
     `created_at`          DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at`          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_referees_user` (`user_id`),
-    KEY `idx_referees_league` (`league_id`),
-    CONSTRAINT `fk_referees_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_referees_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_referees_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- league_referees: un árbitro puede pitar en N ligas con la misma cuenta (D19).
+-- Solo se le pueden asignar partidos de ligas donde su fila esté 'active'.
+CREATE TABLE IF NOT EXISTS `league_referees` (
+    `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `league_id`        BIGINT UNSIGNED NOT NULL,
+    `referee_id`       BIGINT UNSIGNED NOT NULL,
+    `status`           ENUM('invited','active','inactive') NOT NULL DEFAULT 'active',
+    `added_by_user_id` BIGINT UNSIGNED NULL,
+    `created_at`       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_league_referees` (`league_id`, `referee_id`),
+    KEY `idx_league_referees_referee` (`referee_id`, `status`),
+    KEY `idx_league_referees_added_by` (`added_by_user_id`),
+    CONSTRAINT `fk_league_referees_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_league_referees_referee` FOREIGN KEY (`referee_id`) REFERENCES `referees` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_league_referees_added_by` FOREIGN KEY (`added_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `venues` (

@@ -6,7 +6,7 @@
 -- BUILD LIMPIO: empieza con DROP TABLE. Nunca ejecutar sobre una base
 -- con datos reales; para eso están migrations/NNN_*.sql.
 -- Migraciones incluidas:
---   001 — schema inicial (41 tablas; con 004 son 42)
+--   001 — schema inicial (42 tablas; con 004 son 43)
 --   002 — seed de catálogos (sports, event_types, packages)
 --   003 — seed de config global
 --   004 — acceso de jugadores: invitations, roster 'requested', interruptor de registro libre
@@ -48,6 +48,7 @@ DROP TABLE IF EXISTS `tournament_groups`;
 DROP TABLE IF EXISTS `tournaments`;
 DROP TABLE IF EXISTS `fields`;
 DROP TABLE IF EXISTS `venues`;
+DROP TABLE IF EXISTS `league_referees`;
 DROP TABLE IF EXISTS `referees`;
 DROP TABLE IF EXISTS `league_admins`;
 DROP TABLE IF EXISTS `leagues`;
@@ -273,20 +274,37 @@ CREATE TABLE IF NOT EXISTS `league_admins` (
     CONSTRAINT `fk_league_admins_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- referees: league_id NULL = árbitro independiente, asignable por cualquier liga.
+-- referees: el árbitro siempre tiene cuenta (user_id obligatorio) y es una
+-- sola identidad para toda la plataforma; a qué ligas pita lo dice league_referees.
 CREATE TABLE IF NOT EXISTS `referees` (
     `id`                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id`             BIGINT UNSIGNED NOT NULL,
-    `league_id`           BIGINT UNSIGNED NULL,
     `verification_status` ENUM('pending','verified','rejected') NOT NULL DEFAULT 'pending',
     `status`              ENUM('active','inactive') NOT NULL DEFAULT 'active',
     `created_at`          DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at`          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_referees_user` (`user_id`),
-    KEY `idx_referees_league` (`league_id`),
-    CONSTRAINT `fk_referees_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_referees_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_referees_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- league_referees: un árbitro puede pitar en N ligas con la misma cuenta (D19).
+-- Solo se le pueden asignar partidos de ligas donde su fila esté 'active'.
+CREATE TABLE IF NOT EXISTS `league_referees` (
+    `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `league_id`        BIGINT UNSIGNED NOT NULL,
+    `referee_id`       BIGINT UNSIGNED NOT NULL,
+    `status`           ENUM('invited','active','inactive') NOT NULL DEFAULT 'active',
+    `added_by_user_id` BIGINT UNSIGNED NULL,
+    `created_at`       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_league_referees` (`league_id`, `referee_id`),
+    KEY `idx_league_referees_referee` (`referee_id`, `status`),
+    KEY `idx_league_referees_added_by` (`added_by_user_id`),
+    CONSTRAINT `fk_league_referees_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_league_referees_referee` FOREIGN KEY (`referee_id`) REFERENCES `referees` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_league_referees_added_by` FOREIGN KEY (`added_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `venues` (
@@ -498,20 +516,23 @@ CREATE TABLE IF NOT EXISTS `roster_transfers` (
     CONSTRAINT `fk_roster_transfers_approved_by` FOREIGN KEY (`approved_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- invitations: las dos puertas de entrada de un jugador.
+-- invitations: puertas de entrada de jugadores y árbitros.
 --   player_claim → enlace que el delegado manda a un jugador que él dio de
 --                  alta; al registrarse, la cuenta se liga a ese perfil.
 --                  Se guarda solo el SHA-256 del token (token_hash).
 --   team_join    → código corto del equipo en un torneo; quien lo captura
 --                  pide entrar al plantel. Se guarda en claro (code) porque
 --                  el delegado necesita volver a verlo y compartirlo.
+--   referee_join → enlace con el que el admin de liga suma a un árbitro a
+--                  su liga (league_id); crea o activa su fila en league_referees.
 CREATE TABLE IF NOT EXISTS `invitations` (
     `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `type`               ENUM('player_claim','team_join') NOT NULL,
+    `type`               ENUM('player_claim','team_join','referee_join') NOT NULL,
     `code`               VARCHAR(12) NULL,
     `token_hash`         CHAR(64)    NULL,
     `player_id`          BIGINT UNSIGNED NULL,
     `tournament_team_id` BIGINT UNSIGNED NULL,
+    `league_id`          BIGINT UNSIGNED NULL,
     `created_by_user_id` BIGINT UNSIGNED NOT NULL,
     `max_uses`           INT UNSIGNED NULL,
     `uses`               INT UNSIGNED NOT NULL DEFAULT 0,
@@ -524,9 +545,11 @@ CREATE TABLE IF NOT EXISTS `invitations` (
     UNIQUE KEY `uq_invitations_token` (`token_hash`),
     KEY `idx_invitations_player` (`player_id`),
     KEY `idx_invitations_tt` (`tournament_team_id`, `status`),
+    KEY `idx_invitations_league` (`league_id`),
     KEY `idx_invitations_created_by` (`created_by_user_id`),
     CONSTRAINT `fk_invitations_player` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_invitations_tt` FOREIGN KEY (`tournament_team_id`) REFERENCES `tournament_teams` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_invitations_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_invitations_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
