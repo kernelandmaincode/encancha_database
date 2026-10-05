@@ -10,6 +10,7 @@
 --   002 — seed de catálogos (sports, event_types, packages)
 --   003 — seed de config global
 --   004 — acceso de jugadores: invitations, roster 'requested', interruptor de registro libre
+--   005 — columnas del API: pending_changes (players, tournament_rosters), payments.metadata
 -- =============================================================
 
 SET NAMES utf8mb4;
@@ -417,6 +418,7 @@ CREATE TABLE IF NOT EXISTS `players` (
     `email`              VARCHAR(190) NULL,
     `photo_url`          VARCHAR(500) NULL,
     `photo_status`       ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none',
+    `pending_changes`    JSON NULL,
     `created_by_user_id` BIGINT UNSIGNED NULL,
     `created_at`         DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at`         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -471,6 +473,7 @@ CREATE TABLE IF NOT EXISTS `tournament_rosters` (
     `position`           VARCHAR(40) NULL,
     `status`             ENUM('requested','pending','approved','rejected') NOT NULL DEFAULT 'pending',
     `reviewed_by_user_id` BIGINT UNSIGNED NULL,
+    `pending_changes`    JSON NULL,
     `valid_from`         DATE NOT NULL,
     `valid_to`           DATE NULL,
     `created_at`         DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -929,6 +932,7 @@ CREATE TABLE IF NOT EXISTS `payments` (
     `status`              ENUM('pending','pending_review','approved','rejected','refunded') NOT NULL DEFAULT 'pending',
     `provider_reference`  VARCHAR(190) NULL,
     `receipt_url`         VARCHAR(500) NULL,
+    `metadata`            JSON NULL,
     `reported_by_user_id` BIGINT UNSIGNED NULL,
     `reviewed_by_user_id` BIGINT UNSIGNED NULL,
     `paid_at`             DATETIME NULL,

@@ -9,7 +9,9 @@ Esquema MySQL de EnCancha (base `leaguesp_encancha`, HostGator). El diseño y su
 
 ## Estado de verificación
 
-Revisado de forma estática (sintaxis con parser MySQL, 100 FKs con destino, tipo e índice correctos). **Todavía no se ha ejecutado contra un MySQL real**: falta crear la base en cPanel e importarlo. Al hacerlo, confirmar la versión de MySQL/MariaDB del hosting; el esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
+El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. **La migración 005 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
+
+El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 
 ## Migraciones
 
@@ -19,6 +21,7 @@ Revisado de forma estática (sintaxis con parser MySQL, 100 FKs con destino, tip
 | 002 | Catálogos: 5 deportes, 43 tipos de evento, 4 paquetes |
 | 003 | 34 claves de `config` global |
 | 004 | Acceso de jugadores y árbitros: tabla `invitations`, estado `requested` en `tournament_rosters`, clave `PLAYER_SELF_REGISTRATION_ENABLED` |
+| 005 | Columnas que necesita el API: `players.pending_changes`, `tournament_rosters.pending_changes`, `payments.metadata` |
 
 **Pendiente del dueño de la plataforma:** los precios de `packages` están en `0.00`. La migración 002 no pisa precios al re-ejecutarse.
 
@@ -57,4 +60,5 @@ Borrado: el detalle de un partido (`match_*`) cae en cascada con el partido; lo 
 - **Referencias sin FK** (polimórficas): `internal_charges.subject_id`, `payments.payable_id`, `shared_cards.scope_id`, `config.scope_id`.
 - **Acceso de jugadores (D18).** Un jugador puede existir sin cuenta (`players.user_id` nulo). Entra a la app por un enlace de reclamo de su perfil (`invitations` tipo `player_claim`), por un código de equipo (`team_join`, deja el plantel en `requested` hasta que el delegado acepte) o registrándose libre si `PLAYER_SELF_REGISTRATION_ENABLED` está encendido.
 - **Árbitros multi-liga (D19).** El árbitro siempre tiene cuenta. Es una sola identidad (`referees`) ligada a N ligas por `league_referees`; desde su cuenta ve los partidos de todas. Solo se le asignan partidos de ligas donde está activo (lo valida el Service).
+- **Cambios pendientes de aprobación.** `players.pending_changes` y `tournament_rosters.pending_changes` guardan lo propuesto (nombre, fecha de nacimiento, foto, dorsal, posición); las columnas normales conservan el dato vigente hasta que el admin de liga aprueba.
 - **Sin documentos de identidad.** El esquema no guarda identificaciones oficiales; el árbitro valida contra la foto aprobada del jugador.
