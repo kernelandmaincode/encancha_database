@@ -1164,6 +1164,7 @@ INSERT INTO `config` (`scope`, `scope_id`, `config_key`, `value`, `value_type`, 
 ('global', 0, 'ADS_ENABLED_DEFAULT',     '0',        'bool',   'Valor inicial de accounts.ads_enabled en cuentas nuevas', 0),
 ('global', 0, 'PAGINATION_DEFAULT',      '20',       'int',    'Tamaño de página por defecto en listados', 0),
 ('global', 0, 'PHOTO_MAX_SIZE_MB',       '10',       'int',    'Tamaño máximo de imagen en MB', 0),
+('global', 0, 'PAYMENT_MODEL_DEFAULT',   'league_pays', 'string', 'Quién paga la plataforma en las ligas nuevas: league_pays (la liga) o teams_pay (los equipos)', 0),
 ('global', 0, 'PLAYER_SELF_REGISTRATION_ENABLED', '1', 'bool', 'Permitir que un jugador se registre por su cuenta sin invitación de un equipo', 0),
 
 -- Operación de la liga (el admin de liga las ajusta)
