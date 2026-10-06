@@ -447,6 +447,8 @@ CREATE TABLE IF NOT EXISTS `tournament_teams` (
     `lost`            INT UNSIGNED NOT NULL DEFAULT 0,
     `score_for`       INT UNSIGNED NOT NULL DEFAULT 0,
     `score_against`   INT UNSIGNED NOT NULL DEFAULT 0,
+    `detail_for`      INT UNSIGNED NOT NULL DEFAULT 0,
+    `detail_against`  INT UNSIGNED NOT NULL DEFAULT 0,
     `points`          INT          NOT NULL DEFAULT 0,
     `created_at`      DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at`      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1181,6 +1183,7 @@ INSERT INTO `config` (`scope`, `scope_id`, `config_key`, `value`, `value_type`, 
 ('global', 0, 'FUTBOL_GOL_VISITANTE_ENABLED',     '0', 'bool', 'En llaves a ida y vuelta, el gol de visitante desempata', 1),
 ('global', 0, 'FUTBOL_AMARILLAS_PARA_SUSPENSION', '5', 'int',  'Amarillas acumuladas que generan un partido de suspensión (0 = no aplica)', 1),
 ('global', 0, 'FUTBOL_PARTIDOS_POR_ROJA',         '1', 'int',  'Partidos de suspensión por tarjeta roja', 1),
+('global', 0, 'FUTBOL_MINUTOS_POR_TIEMPO',         '45', 'int', 'Minutos de cada tiempo', 1),
 
 -- Básquetbol
 ('global', 0, 'BASQUET_PUNTOS_GANADOR',          '2', 'int', 'Puntos de tabla por partido ganado', 1),
@@ -1188,21 +1191,33 @@ INSERT INTO `config` (`scope`, `scope_id`, `config_key`, `value`, `value_type`, 
 ('global', 0, 'BASQUET_PERIODOS',                '4', 'int', 'Número de periodos reglamentarios', 1),
 ('global', 0, 'BASQUET_FALTAS_PARA_EXPULSION',   '5', 'int', 'Faltas personales que sacan al jugador del partido', 1),
 ('global', 0, 'BASQUET_PARTIDOS_POR_DESCALIFICACION', '1', 'int', 'Partidos de suspensión por descalificación', 1),
+('global', 0, 'BASQUET_MINUTOS_POR_PERIODO',    '10', 'int', 'Minutos de cada periodo', 1),
+('global', 0, 'BASQUET_PUNTOS_INCOMPARECENCIA', '0',  'int', 'Puntos de tabla para el equipo que pierde por no presentarse', 1),
 
 -- Voleibol
 ('global', 0, 'VOLEY_PUNTOS_GANADOR',  '3', 'int', 'Puntos de tabla por partido ganado', 1),
 ('global', 0, 'VOLEY_PUNTOS_PERDEDOR', '0', 'int', 'Puntos de tabla por partido perdido', 1),
 ('global', 0, 'VOLEY_SETS_PARA_GANAR', '3', 'int', 'Sets necesarios para ganar el partido', 1),
+('global', 0, 'VOLEY_PUNTOS_GANADOR_SET_DECISIVO',  '2',  'int', 'Puntos de tabla por ganar en el set decisivo (ej. 3-2)', 1),
+('global', 0, 'VOLEY_PUNTOS_PERDEDOR_SET_DECISIVO', '1',  'int', 'Puntos de tabla por perder en el set decisivo (ej. 2-3)', 1),
+('global', 0, 'VOLEY_PUNTOS_POR_SET',               '25', 'int', 'Puntos para ganar un set', 1),
+('global', 0, 'VOLEY_PUNTOS_SET_DECISIVO',          '15', 'int', 'Puntos para ganar el set decisivo', 1),
 
 -- Pádel
 ('global', 0, 'PADEL_PUNTOS_GANADOR',  '3', 'int', 'Puntos de tabla por partido ganado', 1),
 ('global', 0, 'PADEL_PUNTOS_PERDEDOR', '0', 'int', 'Puntos de tabla por partido perdido', 1),
 ('global', 0, 'PADEL_SETS_PARA_GANAR', '2', 'int', 'Sets necesarios para ganar el partido', 1),
+('global', 0, 'PADEL_JUEGOS_POR_SET',          '6', 'int',  'Juegos para ganar un set', 1),
+('global', 0, 'PADEL_SUPER_TIEBREAK_ENABLED',  '1', 'bool', 'El set decisivo se juega a súper tie-break de 10 puntos', 1),
+('global', 0, 'PADEL_PUNTO_DE_ORO_ENABLED',    '1', 'bool', 'Con 40 iguales se juega punto de oro (sin ventaja)', 1),
 
 -- Tenis
 ('global', 0, 'TENIS_PUNTOS_GANADOR',  '3', 'int', 'Puntos de tabla por partido ganado', 1),
 ('global', 0, 'TENIS_PUNTOS_PERDEDOR', '0', 'int', 'Puntos de tabla por partido perdido', 1),
-('global', 0, 'TENIS_SETS_PARA_GANAR', '2', 'int', 'Sets necesarios para ganar el partido', 1)
+('global', 0, 'TENIS_SETS_PARA_GANAR', '2', 'int', 'Sets necesarios para ganar el partido', 1),
+('global', 0, 'TENIS_JUEGOS_POR_SET',          '6', 'int',  'Juegos para ganar un set', 1),
+('global', 0, 'TENIS_SUPER_TIEBREAK_ENABLED',  '0', 'bool', 'El set decisivo se juega a súper tie-break de 10 puntos', 1),
+('global', 0, 'TENIS_SIN_VENTAJA_ENABLED',     '0', 'bool', 'Con 40 iguales se juega punto decisivo (sin ventaja)', 1)
 
 ON DUPLICATE KEY UPDATE
     `value_type` = VALUES(`value_type`),

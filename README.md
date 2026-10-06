@@ -9,7 +9,7 @@ Esquema MySQL de EnCancha (base `leaguesp_encancha`, HostGator). El diseño y su
 
 ## Estado de verificación
 
-El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. **La migración 005 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
+El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. La 005 se ejecutó el 2026-10-05. **La migración 006 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
 
 El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 
@@ -22,6 +22,7 @@ El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 | 003 | 34 claves de `config` global |
 | 004 | Acceso de jugadores y árbitros: tabla `invitations`, estado `requested` en `tournament_rosters`, clave `PLAYER_SELF_REGISTRATION_ENABLED` |
 | 005 | Columnas que necesita el API: `players.pending_changes`, `tournament_rosters.pending_changes`, `payments.metadata` |
+| 006 | Reglas por deporte: 13 claves de `config` (set decisivo en voleibol, juegos y tie-break en pádel y tenis, tiempos, incomparecencia en básquetbol) y `tournament_teams.detail_for`/`detail_against` (juegos o puntos de set, para desempatar la tabla) |
 
 **Pendiente del dueño de la plataforma:** los precios de `packages` están en `0.00`. La migración 002 no pisa precios al re-ejecutarse.
 
