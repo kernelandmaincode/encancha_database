@@ -9,7 +9,7 @@ Esquema MySQL de EnCancha (base `leaguesp_encancha`, HostGator). El diseño y su
 
 ## Estado de verificación
 
-El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. La 005 se ejecutó el 2026-10-05. La 006 se ejecutó el 2026-10-05. La 007 se ejecutó el 2026-10-06. La 008 se ejecutó el 2026-10-06. La 009 se ejecutó el 2026-10-06. La 010 se ejecutó el 2026-10-06. La 011 se ejecutó el 2026-10-06. La 012 se ejecutó el 2026-10-06. La 013 se ejecutó el 2026-10-06. **La migración 014 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
+El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. La 005 se ejecutó el 2026-10-05. La 006 se ejecutó el 2026-10-05. La 007 se ejecutó el 2026-10-06. La 008 se ejecutó el 2026-10-06. La 009 se ejecutó el 2026-10-06. La 010 se ejecutó el 2026-10-06. La 011 se ejecutó el 2026-10-06. La 012 se ejecutó el 2026-10-06. La 013 se ejecutó el 2026-10-06. La 014 se ejecutó el 2026-10-06. **La migración 015 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
 
 El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 
@@ -31,6 +31,7 @@ El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 | 012 | `FUTBOL_REINGRESO_ENABLED`: cambios libres (quien sale puede volver a entrar) o no, por liga o torneo |
 | 013 | `match_periods.started_at` / `ended_at`: inicio y cierre real de cada tiempo, periodo o set |
 | 014 | Multa ligada a una sanción (`player_suspensions.fine_charge_id`, `fine_lifts`, estado `lifted`), veto de liga (`league_player_bans`) y ajustes `SANCION_MULTA_MONTO` / `SANCION_MULTA_LEVANTA` |
+| 015 | Formato de torneo `league_knockout` (liga y liguilla: una tabla y fase final) |
 
 **Pendiente del dueño de la plataforma:** los precios de `packages` están en `0.00`. La migración 002 no pisa precios al re-ejecutarse.
 

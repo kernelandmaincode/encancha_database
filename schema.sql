@@ -366,7 +366,8 @@ CREATE TABLE IF NOT EXISTS `tournaments` (
     `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `league_id`  BIGINT UNSIGNED NOT NULL,
     `name`       VARCHAR(150) NOT NULL,
-    `format`     ENUM('groups','knockout','round_robin','groups_knockout','groups_two_legs') NOT NULL,
+    -- league_knockout: una sola tabla y los mejores a la fase final (liga y liguilla)
+    `format`     ENUM('groups','knockout','round_robin','groups_knockout','groups_two_legs','league_knockout') NOT NULL,
     `settings`   JSON NULL,
     `starts_at`  DATE NULL,
     `ends_at`    DATE NULL,
