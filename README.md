@@ -9,7 +9,7 @@ Esquema MySQL de EnCancha (base `leaguesp_encancha`, HostGator). El diseño y su
 
 ## Estado de verificación
 
-El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. La 005 se ejecutó el 2026-10-05. La 006 se ejecutó el 2026-10-05. La 007 se ejecutó el 2026-10-06. La 008 se ejecutó el 2026-10-06. **La migración 009 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
+El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. La 005 se ejecutó el 2026-10-05. La 006 se ejecutó el 2026-10-05. La 007 se ejecutó el 2026-10-06. La 008 se ejecutó el 2026-10-06. La 009 se ejecutó el 2026-10-06. **La migración 010 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
 
 El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 
@@ -26,6 +26,7 @@ El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 | 007 | Clave global `PAYMENT_MODEL_DEFAULT`: quién paga la plataforma en las ligas nuevas; solo la cambia el super admin |
 | 008 | Ligas para espectadores: `leagues.is_public` y `leagues.public_code` (código para compartir), tabla `league_followers` |
 | 009 | Actualización obligatoria de la app: `APP_MIN_VERSION_IOS`, `APP_MIN_VERSION_ANDROID`, `APP_STORE_URL_IOS`, `APP_STORE_URL_ANDROID` |
+| 010 | Límite de jugadores por equipo: `{DEPORTE}_MAX_JUGADORES_POR_EQUIPO`, `ROSTER_LIMIT_LEAGUES_DECIDE` y `leagues.roster_limit_unlocked` |
 
 **Pendiente del dueño de la plataforma:** los precios de `packages` están en `0.00`. La migración 002 no pisa precios al re-ejecutarse.
 
