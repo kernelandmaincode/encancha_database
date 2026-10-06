@@ -690,6 +690,9 @@ CREATE TABLE IF NOT EXISTS `match_periods` (
     `away_score`    INT UNSIGNED NOT NULL DEFAULT 0,
     `home_tiebreak` INT UNSIGNED NULL,
     `away_tiebreak` INT UNSIGNED NULL,
+    -- inicio y cierre reales del segmento; con started_at y sin ended_at es el que se está jugando
+    `started_at`    DATETIME NULL,
+    `ended_at`      DATETIME NULL,
     `created_at`    DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
