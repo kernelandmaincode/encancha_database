@@ -229,6 +229,7 @@ CREATE TABLE IF NOT EXISTS `event_types` (
     `category`       ENUM('score','discipline','other') NOT NULL DEFAULT 'other',
     `score_value`    INT          NOT NULL DEFAULT 0,
     `is_sending_off` TINYINT(1)   NOT NULL DEFAULT 0,
+    `player_scope`   ENUM('optional','required','two','none') NOT NULL DEFAULT 'optional',
     `color`          VARCHAR(20)  NULL,
     `sort_order`     INT          NOT NULL DEFAULT 0,
     `is_active`      TINYINT(1)   NOT NULL DEFAULT 1,
@@ -730,6 +731,7 @@ CREATE TABLE IF NOT EXISTS `match_events` (
     `event_type_id`        BIGINT UNSIGNED NOT NULL,
     `tournament_team_id`   BIGINT UNSIGNED NOT NULL,
     `tournament_roster_id` BIGINT UNSIGNED NULL,
+    `related_tournament_roster_id` BIGINT UNSIGNED NULL,
     `guest_lineup_id`      BIGINT UNSIGNED NULL,
     `period_number`        TINYINT UNSIGNED NULL,
     `minute`               SMALLINT UNSIGNED NULL,
@@ -742,12 +744,14 @@ CREATE TABLE IF NOT EXISTS `match_events` (
     KEY `idx_match_events_roster_type` (`tournament_roster_id`, `event_type_id`),
     KEY `idx_match_events_team_type` (`tournament_team_id`, `event_type_id`),
     KEY `idx_match_events_type` (`event_type_id`),
+    KEY `idx_match_events_related` (`related_tournament_roster_id`),
     KEY `idx_match_events_guest` (`guest_lineup_id`),
     KEY `idx_match_events_created_by` (`created_by_user_id`),
     CONSTRAINT `fk_match_events_match` FOREIGN KEY (`match_id`) REFERENCES `matches` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_match_events_type` FOREIGN KEY (`event_type_id`) REFERENCES `event_types` (`id`),
     CONSTRAINT `fk_match_events_tt` FOREIGN KEY (`tournament_team_id`) REFERENCES `tournament_teams` (`id`),
     CONSTRAINT `fk_match_events_roster` FOREIGN KEY (`tournament_roster_id`) REFERENCES `tournament_rosters` (`id`),
+    CONSTRAINT `fk_match_events_related` FOREIGN KEY (`related_tournament_roster_id`) REFERENCES `tournament_rosters` (`id`),
     CONSTRAINT `fk_match_events_guest` FOREIGN KEY (`guest_lineup_id`) REFERENCES `match_lineups` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_match_events_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1156,6 +1160,42 @@ WHERE s.`code` IN ('padel', 'tenis')
 ON DUPLICATE KEY UPDATE
     `name` = VALUES(`name`), `category` = VALUES(`category`), `score_value` = VALUES(`score_value`),
     `is_sending_off` = VALUES(`is_sending_off`), `color` = VALUES(`color`), `sort_order` = VALUES(`sort_order`);
+
+-- -------------------------------------------------------------
+-- event_types — incidencias por deporte (migración 011)
+-- -------------------------------------------------------------
+-- Incidencias que faltaban en cada deporte: cambios, salidas por lesión,
+-- tiempos muertos y la segunda amarilla.
+INSERT INTO `event_types` (`sport_id`, `code`, `name`, `category`, `score_value`, `is_sending_off`, `color`, `sort_order`)
+SELECT s.`id`, t.`code`, t.`name`, t.`category`, t.`score_value`, t.`is_sending_off`, t.`color`, t.`sort_order`
+FROM `sports` s
+JOIN (
+    SELECT 'futbol' AS `sport`, 'segunda_amarilla' AS `code`, 'Segunda amarilla (expulsión)' AS `name`, 'discipline' AS `category`, 0 AS `score_value`, 1 AS `is_sending_off`, '#E53935' AS `color`, 55 AS `sort_order`
+    UNION ALL SELECT 'futbol',  'salida_lesion',   'Salida por lesión', 'other', 0, 0, NULL, 105
+    UNION ALL SELECT 'basquet', 'cambio',          'Cambio',            'other', 0, 0, NULL, 92
+    UNION ALL SELECT 'basquet', 'salida_lesion',   'Salida por lesión', 'other', 0, 0, NULL, 94
+    UNION ALL SELECT 'basquet', 'tiempo_muerto',   'Tiempo muerto',     'other', 0, 0, NULL, 96
+    UNION ALL SELECT 'voley',   'cambio',          'Cambio',            'other', 0, 0, NULL, 72
+    UNION ALL SELECT 'voley',   'salida_lesion',   'Salida por lesión', 'other', 0, 0, NULL, 74
+    UNION ALL SELECT 'voley',   'tiempo_muerto',   'Tiempo muerto',     'other', 0, 0, NULL, 76
+    UNION ALL SELECT 'padel',   'atencion_medica', 'Atención médica',   'other', 0, 0, NULL, 62
+    UNION ALL SELECT 'padel',   'retiro_lesion',   'Retiro por lesión', 'other', 0, 0, NULL, 64
+    UNION ALL SELECT 'tenis',   'atencion_medica', 'Atención médica',   'other', 0, 0, NULL, 62
+    UNION ALL SELECT 'tenis',   'retiro_lesion',   'Retiro por lesión', 'other', 0, 0, NULL, 64
+) t ON t.`sport` = s.`code`
+ON DUPLICATE KEY UPDATE
+    `name` = VALUES(`name`), `category` = VALUES(`category`), `score_value` = VALUES(`score_value`),
+    `is_sending_off` = VALUES(`is_sending_off`), `color` = VALUES(`color`), `sort_order` = VALUES(`sort_order`);
+
+-- A quién involucra cada incidencia:
+--   two      → dos jugadores del mismo equipo (cambio: quién sale y quién entra)
+--   required → siempre lleva jugador (sanciones, lesiones, jugador del partido)
+--   none     → es del equipo, sin jugador (tiempo muerto)
+--   optional → el jugador se puede dejar sin especificar (lo demás)
+UPDATE `event_types` SET `player_scope` = 'two' WHERE `code` = 'cambio';
+UPDATE `event_types` SET `player_scope` = 'none' WHERE `code` = 'tiempo_muerto';
+UPDATE `event_types` SET `player_scope` = 'required'
+WHERE `category` = 'discipline' OR `code` IN ('salida_lesion', 'retiro_lesion', 'atencion_medica', 'mvp');
 
 -- -------------------------------------------------------------
 -- packages — sin paquete gratuito (D13). La prueba corre en 'liga_1x1'.
