@@ -51,6 +51,7 @@ DROP TABLE IF EXISTS `fields`;
 DROP TABLE IF EXISTS `venues`;
 DROP TABLE IF EXISTS `league_referees`;
 DROP TABLE IF EXISTS `referees`;
+DROP TABLE IF EXISTS `league_followers`;
 DROP TABLE IF EXISTS `league_admins`;
 DROP TABLE IF EXISTS `leagues`;
 DROP TABLE IF EXISTS `event_types`;
@@ -251,10 +252,13 @@ CREATE TABLE IF NOT EXISTS `leagues` (
     `logo_url`      VARCHAR(500) NULL,
     `timezone`      VARCHAR(50)  NOT NULL DEFAULT 'America/Mexico_City',
     `payment_model` ENUM('league_pays','teams_pay') NOT NULL DEFAULT 'league_pays',
+    `is_public`     TINYINT(1)   NOT NULL DEFAULT 1,
+    `public_code`   VARCHAR(12)  NULL,
     `status`        ENUM('active','archived') NOT NULL DEFAULT 'active',
     `created_at`    DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_leagues_public_code` (`public_code`),
     KEY `idx_leagues_account` (`account_id`, `status`),
     KEY `idx_leagues_sport` (`sport_id`),
     CONSTRAINT `fk_leagues_account` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`),
@@ -273,6 +277,21 @@ CREATE TABLE IF NOT EXISTS `league_admins` (
     KEY `idx_league_admins_user` (`user_id`),
     CONSTRAINT `fk_league_admins_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_league_admins_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- league_followers: quien sigue una liga la ve en su inicio y recibe sus
+-- avisos, sin ser jugador ni responsable de un equipo.
+CREATE TABLE IF NOT EXISTS `league_followers` (
+    `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `league_id`  BIGINT UNSIGNED NOT NULL,
+    `user_id`    BIGINT UNSIGNED NOT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_league_followers` (`league_id`, `user_id`),
+    KEY `idx_league_followers_user` (`user_id`),
+    CONSTRAINT `fk_league_followers_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_league_followers_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- referees: el árbitro siempre tiene cuenta (user_id obligatorio) y es una

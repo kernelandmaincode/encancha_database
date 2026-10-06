@@ -2,14 +2,14 @@
 
 Esquema MySQL de EnCancha (base `leaguesp_encancha`, HostGator). El diseño y sus decisiones (D1-D17) están en `ENCANCHA_PHASE2_DESIGN.md`, en la carpeta central del proyecto (`Desarrollos/EnCancha/`, fuera de este repo).
 
-- **`schema.sql`** — build limpio: `DROP TABLE` + las 43 tablas + seeds. Para una base nueva o para reconstruir desarrollo. **Nunca sobre una base con datos reales.** Es un solo archivo sin `SOURCE`, así que se puede importar tal cual desde phpMyAdmin.
+- **`schema.sql`** — build limpio: `DROP TABLE` + las 44 tablas + seeds. Para una base nueva o para reconstruir desarrollo. **Nunca sobre una base con datos reales.** Es un solo archivo sin `SOURCE`, así que se puede importar tal cual desde phpMyAdmin.
 - **`migrations/NNN_*.sql`** — cambios incrementales idempotentes, se aplican en orden sobre una base existente. Cada feature toca **ambos**: una migración nueva y `schema.sql`.
 
 `schema.sql` refleja el estado final tras aplicar todas las migraciones, en forma de `CREATE` limpio (sin `ALTER`). Si agregas una migración, actualiza `schema.sql` a mano.
 
 ## Estado de verificación
 
-El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. La 005 se ejecutó el 2026-10-05. La 006 se ejecutó el 2026-10-05. **La migración 007 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
+El usuario ejecutó `schema.sql` (migraciones 001-004) en el MySQL de HostGator el 2026-10-04. La 005 se ejecutó el 2026-10-05. La 006 se ejecutó el 2026-10-05. La 007 se ejecutó el 2026-10-06. **La migración 008 es posterior: falta ejecutarla en el servidor.** Usa `PREPARE` sobre `information_schema`, revisada solo de forma estática; si phpMyAdmin la rechaza, las tres sentencias `ALTER TABLE` que contiene se pueden correr a mano una vez.
 
 El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 
@@ -24,6 +24,7 @@ El esquema usa columnas `JSON` (MySQL 5.7+ / MariaDB 10.2+).
 | 005 | Columnas que necesita el API: `players.pending_changes`, `tournament_rosters.pending_changes`, `payments.metadata` |
 | 006 | Reglas por deporte: 13 claves de `config` (set decisivo en voleibol, juegos y tie-break en pádel y tenis, tiempos, incomparecencia en básquetbol) y `tournament_teams.detail_for`/`detail_against` (juegos o puntos de set, para desempatar la tabla) |
 | 007 | Clave global `PAYMENT_MODEL_DEFAULT`: quién paga la plataforma en las ligas nuevas; solo la cambia el super admin |
+| 008 | Ligas para espectadores: `leagues.is_public` y `leagues.public_code` (código para compartir), tabla `league_followers` |
 
 **Pendiente del dueño de la plataforma:** los precios de `packages` están en `0.00`. La migración 002 no pisa precios al re-ejecutarse.
 
@@ -40,7 +41,7 @@ Borrado: el detalle de un partido (`match_*`) cae en cascada con el partido; lo 
 | Identidad y acceso | `users`, `auth_tokens`, `device_tokens` |
 | Cuenta y suscripción | `accounts`, `packages`, `account_subscriptions`, `subscription_events` |
 | Catálogo deportivo | `sports`, `event_types` |
-| Liga y torneo | `leagues`, `league_admins`, `referees`, `league_referees`, `venues`, `fields`, `tournaments`, `tournament_groups` |
+| Liga y torneo | `leagues`, `league_admins`, `league_followers`, `referees`, `league_referees`, `venues`, `fields`, `tournaments`, `tournament_groups` |
 | Equipos y jugadores | `teams`, `team_managers`, `players`, `tournament_teams`, `tournament_rosters`, `roster_transfers`, `invitations` |
 | Llaves | `brackets`, `bracket_nodes` |
 | Partido y cédula | `matches`, `match_periods`, `match_lineups`, `match_events`, `identity_verifications`, `attendance_confirmations`, `player_suspensions`, `match_media`, `match_signatures`, `match_claims` |
