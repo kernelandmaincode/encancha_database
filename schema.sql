@@ -1255,6 +1255,7 @@ INSERT INTO `config` (`scope`, `scope_id`, `config_key`, `value`, `value_type`, 
 ('global', 0, 'FUTBOL_AMARILLAS_PARA_SUSPENSION', '5', 'int',  'Amarillas acumuladas que generan un partido de suspensión (0 = no aplica)', 1),
 ('global', 0, 'FUTBOL_PARTIDOS_POR_ROJA',         '1', 'int',  'Partidos de suspensión por tarjeta roja', 1),
 ('global', 0, 'FUTBOL_MINUTOS_POR_TIEMPO',         '45', 'int', 'Minutos de cada tiempo', 1),
+('global', 0, 'FUTBOL_REINGRESO_ENABLED',          '1', 'bool', 'Cambios libres: un jugador que salió de cambio puede volver a entrar', 1),
 
 -- Básquetbol
 ('global', 0, 'BASQUET_PUNTOS_GANADOR',          '2', 'int', 'Puntos de tabla por partido ganado', 1),
