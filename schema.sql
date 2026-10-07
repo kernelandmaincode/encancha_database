@@ -442,6 +442,7 @@ CREATE TABLE IF NOT EXISTS `players` (
     `email`              VARCHAR(190) NULL,
     `photo_url`          VARCHAR(500) NULL,
     `photo_status`       ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none',
+    `photo_change_allowed` TINYINT(1) NOT NULL DEFAULT 0, -- la liga liberó el cambio de una foto ya aprobada (un solo uso)
     `pending_changes`    JSON NULL,
     `created_by_user_id` BIGINT UNSIGNED NULL,
     `created_at`         DATETIME DEFAULT CURRENT_TIMESTAMP,
