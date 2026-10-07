@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS `team_subscriptions`;
 DROP TABLE IF EXISTS `match_claims`;
 DROP TABLE IF EXISTS `match_signatures`;
 DROP TABLE IF EXISTS `match_media`;
+DROP TABLE IF EXISTS `league_fine_rules`;
 DROP TABLE IF EXISTS `league_player_bans`;
 DROP TABLE IF EXISTS `player_suspensions`;
 DROP TABLE IF EXISTS `attendance_confirmations`;
@@ -824,6 +825,22 @@ CREATE TABLE IF NOT EXISTS `player_suspensions` (
     CONSTRAINT `fk_player_suspensions_fine` FOREIGN KEY (`fine_charge_id`) REFERENCES `internal_charges` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- league_fine_rules: cuánto le cuesta al equipo cada tipo de incidencia, según la liga.
+CREATE TABLE IF NOT EXISTS `league_fine_rules` (
+    `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `league_id`        BIGINT UNSIGNED NOT NULL,
+    `event_type_id`    BIGINT UNSIGNED NOT NULL,
+    `amount`           DECIMAL(10,2) NOT NULL,
+    `lifts_suspension` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at`       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_league_fine_rules` (`league_id`, `event_type_id`),
+    KEY `idx_league_fine_rules_event_type` (`event_type_id`),
+    CONSTRAINT `fk_league_fine_rules_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_league_fine_rules_event_type` FOREIGN KEY (`event_type_id`) REFERENCES `event_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- league_player_bans: veto de liga; el jugador no puede ser alineado ni dado de alta en ningún torneo de la liga.
 CREATE TABLE IF NOT EXISTS `league_player_bans` (
     `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -955,6 +972,8 @@ CREATE TABLE IF NOT EXISTS `internal_charges` (
     `league_id`          BIGINT UNSIGNED NOT NULL,
     `tournament_id`      BIGINT UNSIGNED NULL,
     `match_id`           BIGINT UNSIGNED NULL,
+    -- incidencia que originó una multa automática sin sanción (una amarilla)
+    `origin_match_event_id` BIGINT UNSIGNED NULL,
     `subject_type`       ENUM('team','player') NOT NULL,
     `subject_id`         BIGINT UNSIGNED NOT NULL,
     `charge_type`        ENUM('inscripcion','arbitraje','credencial','multa','otro') NOT NULL,
@@ -971,10 +990,12 @@ CREATE TABLE IF NOT EXISTS `internal_charges` (
     KEY `idx_internal_charges_subject` (`subject_type`, `subject_id`, `status`),
     KEY `idx_internal_charges_tournament` (`tournament_id`),
     KEY `idx_internal_charges_match` (`match_id`),
+    KEY `idx_internal_charges_origin_event` (`origin_match_event_id`),
     KEY `idx_internal_charges_created_by` (`created_by_user_id`),
     CONSTRAINT `fk_internal_charges_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
     CONSTRAINT `fk_internal_charges_tournament` FOREIGN KEY (`tournament_id`) REFERENCES `tournaments` (`id`),
     CONSTRAINT `fk_internal_charges_match` FOREIGN KEY (`match_id`) REFERENCES `matches` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_internal_charges_origin_event` FOREIGN KEY (`origin_match_event_id`) REFERENCES `match_events` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_internal_charges_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1275,8 +1296,8 @@ INSERT INTO `config` (`scope`, `scope_id`, `config_key`, `value`, `value_type`, 
 ('global', 0, 'MATCH_SHEET_SIGNATURE_MODE',     'accept',   'string', 'accept = gesto de aceptación; drawn = además trazo de firma', 1),
 ('global', 0, 'MATCH_SHEET_CLAIM_WINDOW_HOURS', '48',       'int',    'Horas para firmar la cédula o reclamar desde que se captura el marcador', 1),
 ('global', 0, 'BLOCK_MATCH_ON_UNPAID_FEES',     '0',        'bool',   'Bloquear el partido de un equipo con adeudos vencidos', 1),
-('global', 0, 'SANCION_MULTA_MONTO',           '0',        'int',    'Multa al equipo por cada sanción automática de un jugador (0 = sin multa)', 1),
-('global', 0, 'SANCION_MULTA_LEVANTA',         '0',        'bool',   'Al pagar la multa se levanta la sanción del jugador', 1),
+('global', 0, 'SANCION_MULTA_MONTO',           '0',        'int',    'Multa al equipo por una sanción automática sin monto propio, como la acumulación de tarjetas (0 = sin multa)', 1),
+('global', 0, 'SANCION_MULTA_LEVANTA',         '0',        'bool',   'Al pagar esa multa general se levanta la sanción del jugador', 1),
 ('global', 0, 'NOTIF_RECORDATORIO_1_DIA_ENABLED',  '1',     'bool',   'Recordatorio de partido un día antes', 1),
 ('global', 0, 'NOTIF_RECORDATORIO_1_HORA_ENABLED', '1',     'bool',   'Recordatorio de partido una hora antes', 1),
 
