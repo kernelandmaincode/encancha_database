@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `is_platform_admin` TINYINT(1)      NOT NULL DEFAULT 0,
     `status`            ENUM('active','disabled') NOT NULL DEFAULT 'active',
     `last_login_at`     DATETIME        NULL,
+    `terms_accepted_at` DATETIME        NULL, -- cuándo aceptó el aviso de privacidad y los términos
+    `terms_version`     VARCHAR(20)     NULL, -- qué versión (fecha) aceptó
     `created_at`        DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -444,6 +446,8 @@ CREATE TABLE IF NOT EXISTS `players` (
     `photo_status`       ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none',
     `photo_change_allowed` TINYINT(1) NOT NULL DEFAULT 0, -- la liga liberó el cambio de una foto ya aprobada (un solo uso)
     `pending_changes`    JSON NULL,
+    `guardian_consent_at` DATETIME NULL, -- quien lo registró declaró la autorización de madre, padre o tutor (menores de 18)
+    `guardian_consent_by_user_id` BIGINT UNSIGNED NULL,
     `created_by_user_id` BIGINT UNSIGNED NULL,
     `created_at`         DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at`         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
